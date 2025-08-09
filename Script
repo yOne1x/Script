@@ -1,0 +1,75 @@
+local espEnabled = true
+local hitboxEnabled = true
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local localPlayer = Players.LocalPlayer
+local workspace = game:GetService("Workspace")
+
+local function createESP(character)
+    if character:FindFirstChild("Highlight") then return end
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "Highlight"
+    highlight.Adornee = character
+    highlight.FillColor = Color3.new(1, 0, 0)
+    highlight.OutlineColor = Color3.new(1, 1, 1)
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = character
+end
+
+local function createHitbox(character)
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local existing = character:FindFirstChild("HitboxExtender")
+    if existing then existing:Destroy() end
+    local hitbox = Instance.new("Part")
+    hitbox.Name = "HitboxExtender"
+    hitbox.Size = hrp.Size * 5
+    hitbox.Transparency = 1
+    hitbox.CanCollide = true
+    hitbox.Anchored = false
+    hitbox.Massless = true
+    hitbox.Parent = workspace
+    hitbox.CFrame = hrp.CFrame
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = hrp
+    weld.Part1 = hitbox
+    weld.Parent = hitbox
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.Died:Connect(function()
+            if hitbox then
+                hitbox:Destroy()
+            end
+        end)
+    end
+end
+
+local function applyFeatures(character)
+    if espEnabled then
+        createESP(character)
+    end
+    if hitboxEnabled then
+        createHitbox(character)
+    end
+end
+
+if localPlayer.Character then
+    applyFeatures(localPlayer.Character)
+end
+
+localPlayer.CharacterAdded:Connect(function(character)
+    wait(1)
+    applyFeatures(character)
+end)
+
+RunService.Heartbeat:Connect(function()
+    if hitboxEnabled and localPlayer.Character then
+        local hitbox = localPlayer.Character:FindFirstChild("HitboxExtender")
+        local hrp = localPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hitbox and hrp then
+            hitbox.CFrame = hrp.CFrame
+        end
+    end
+end)
